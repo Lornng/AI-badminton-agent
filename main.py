@@ -19,7 +19,7 @@ class ClientDetails(BaseModel):
 class Product(BaseModel):
     category: str
     item: str
-    description: Optional[str] = None
+    description: str = ""
     # Specifications now holds everything including suitability, features, etc.
     specifications: Dict[str, Any] = {} 
 
