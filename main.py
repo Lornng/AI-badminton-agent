@@ -90,8 +90,11 @@ async def read_root(request: Request):
     return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
 
 @app.post("/generate", response_class=HTMLResponse)
-async def generate_proposal(request: Request, payload: N8NPayload):
+async def generate_proposal(request: Request, payload: List[N8NPayload]):
     """
-    Accepts JSON data from n8n (wrapped in 'output') and renders the proposal template.
+    Accepts JSON data from n8n (wrapped in a list and 'output') and renders the proposal template.
+    Expects format: [{"output": {...}}]
     """
-    return templates.TemplateResponse("proposal.html", {"request": request, "data": payload.output})
+    # n8n sends a list of items, we take the first one
+    data = payload[0].output
+    return templates.TemplateResponse("proposal.html", {"request": request, "data": data})
