@@ -35,7 +35,7 @@ class N8NPayload(BaseModel):
     body: ProposalData
 
 # In-memory storage for proposals (use a database in production)
-proposals_db: Dict[str, ProposalData] = {}
+proposals_db: Dict[str, Any] = {}
 
 # Default Mock Data
 default_proposal = ProposalData(
@@ -94,14 +94,23 @@ async def read_root(request: Request):
     return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
 
 @app.post("/generate")
-async def generate_proposal(request: Request, data: ProposalData):
+async def generate_proposal(request: Request, payload: List[Dict[str, Any]]):
     """
-    Accepts JSON data from n8n, stores it, and returns a unique URL.
+    Accepts flexible JSON data from n8n, stores it, and returns a unique URL.
+    Handles format: [{"output": {...}}] or just [{...}]
     """
+    # Extract data - check if wrapped in 'output' key
+    if payload and isinstance(payload, list) and len(payload) > 0:
+        first_item = payload[0]
+        # If data is wrapped in 'output', extract it
+        data = first_item.get('output', first_item)
+    else:
+        data = payload
+    
     # Generate unique ID
     proposal_id = str(uuid.uuid4())
     
-    # Store the proposal
+    # Store the proposal (as dict)
     proposals_db[proposal_id] = data
     
     # Get the base URL from the request
@@ -122,5 +131,6 @@ async def view_proposal(request: Request, proposal_id: str):
             "error": "Proposal not found"
         })
     
+    # Get the stored data (now a dict)
     data = proposals_db[proposal_id]
     return templates.TemplateResponse("proposal.html", {"request": request, "data": data})
