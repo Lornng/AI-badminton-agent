@@ -40,15 +40,15 @@
             <h1 class="text-4xl font-bold text-white tracking-tight">Personalized Proposal</h1>
 
             <!-- Dynamic User Info -->
-            {% if data.user_name or data.get('client_details') %}
+            {% if data.name or data.user_name or data.get('client_details') %}
             <div class="mt-4 text-right">
                 <p class="text-slate-400 text-sm">Prepared for</p>
                 <h2 class="text-2xl font-semibold gradient-text">
-                    {{ data.user_name or data.get('client_details', {}).get('name', 'Client') }}
+                    {{ data.name or data.user_name or data.get('client_details', {}).get('name', 'Client') }}
                 </h2>
-                {% if data.user_email or data.get('client_details', {}).get('email') %}
+                {% if data.email or data.user_email or data.get('client_details', {}).get('email') %}
                 <p class="text-slate-500 text-sm mt-1">
-                    {{ data.user_email or data.get('client_details', {}).get('email', '') }}
+                    {{ data.email or data.user_email or data.get('client_details', {}).get('email', '') }}
                 </p>
                 {% endif %}
             </div>
@@ -57,42 +57,67 @@
 
         <!-- Content -->
         <div class="p-10">
-            <!-- Products/Items List -->
-            {% if data.products %}
+            <!-- Products/Items List OR Single Product Details -->
+            {% set products_list = data.products or ([data.product_details] if data.product_details else []) %}
+
+            {% if products_list %}
             <div class="space-y-6 mb-10">
-                {% for product in data.products %}
+                {% for product in products_list %}
                 <div
                     class="bg-slate-800/30 rounded-xl border border-slate-700/50 overflow-hidden hover:border-slate-600/50 transition-all">
                     <!-- Product Header -->
                     <div class="p-5 border-b border-slate-700/50 bg-slate-800/50">
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                {% if product.category %}
-                                <span class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1 block">{{
-                                    product.category }}</span>
+                                {% if product.category or product.type %}
+                                <span class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1 block">
+                                    {{ product.category or product.type }}
+                                </span>
                                 {% endif %}
-                                <h3 class="text-xl font-semibold text-white">{{ product.item or 'Product' }}</h3>
+                                <h3 class="text-xl font-semibold text-white">
+                                    {{ product.item or product.description or 'Product' }}
+                                </h3>
                             </div>
 
-                            <!-- Price Display -->
-                            {% if product.price or product.total_price %}
+                            <!-- Price/Budget Display -->
+                            {% if product.price or product.total_price or product.budget %}
                             <div class="text-right ml-4">
                                 {% if product.quantity and product.quantity > 1 %}
                                 <p class="text-xs text-slate-400">Qty: {{ product.quantity }} × ${{ product.price }}</p>
                                 {% endif %}
-                                <p class="text-lg font-bold gradient-text">${{ product.total_price or product.price }}
+                                <p class="text-lg font-bold gradient-text">
+                                    {{ product.budget or ('$' + (product.total_price|string if product.total_price else
+                                    product.price|string)) }}
                                 </p>
                             </div>
                             {% endif %}
                         </div>
+
+                        <!-- Suitability Badge -->
+                        {% if product.suitability %}
+                        <div class="mt-2">
+                            <span
+                                class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 text-xs font-medium border border-blue-500/20">
+                                {{ product.suitability }}
+                            </span>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- Product Body -->
                     <div class="p-6">
-                        {% if product.description %}
+                        {% if product.description and product.description != product.item %}
                         <div class="mb-4">
                             <h4 class="text-slate-300 font-medium mb-2 text-sm uppercase">Description</h4>
                             <p class="text-slate-400 text-sm leading-relaxed">{{ product.description }}</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Primary Function or other top-level fields -->
+                        {% if product.primary_function %}
+                        <div class="mb-4">
+                            <h4 class="text-slate-300 font-medium mb-2 text-sm uppercase">Primary Function</h4>
+                            <p class="text-slate-400 text-sm">{{ product.primary_function }}</p>
                         </div>
                         {% endif %}
 
@@ -115,12 +140,15 @@
                         </div>
                         {% endif %}
 
-                        <!-- Specifications (if dict) -->
-                        {% if product.specifications %}
+                        <!-- Key Attributes (nested dict) OR Specifications -->
+                        {% set attributes = product.key_attributes or product.specifications %}
+                        {% if attributes %}
                         <div>
-                            <h4 class="text-slate-300 font-medium mb-2 text-sm uppercase">Specifications</h4>
+                            <h4 class="text-slate-300 font-medium mb-2 text-sm uppercase">
+                                {{ 'Attributes' if product.key_attributes else 'Specifications' }}
+                            </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {% for key, value in product.specifications.items() %}
+                                {% for key, value in attributes.items() %}
                                 {% if value is string %}
                                 <div class="flex justify-between text-sm border-b border-slate-700/30 pb-1">
                                     <span class="text-slate-500 capitalize">{{ key.replace('_', ' ') }}</span>
