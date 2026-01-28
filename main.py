@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import datetime
 import uuid
 
@@ -94,18 +94,28 @@ async def read_root(request: Request):
     return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
 
 @app.post("/generate")
-async def generate_proposal(request: Request, payload: List[Dict[str, Any]]):
+async def generate_proposal(request: Request, payload: Union[List[Dict[str, Any]], Dict[str, Any]]):
     """
     Accepts flexible JSON data from n8n, stores it, and returns a unique URL.
-    Handles format: [{"output": {...}}] or just [{...}]
+    Handles multiple formats:
+    - [{"output": {...}}]
+    - {"body": {...}}
+    - {...} (direct data)
     """
-    # Extract data - check if wrapped in 'output' key
-    if payload and isinstance(payload, list) and len(payload) > 0:
-        first_item = payload[0]
-        # If data is wrapped in 'output', extract it
-        data = first_item.get('output', first_item)
-    else:
-        data = payload
+    # Extract the actual data from various wrapper formats
+    data = payload
+    
+    # If it's a list, get the first item
+    if isinstance(payload, list) and len(payload) > 0:
+        data = payload[0]
+    
+    # If data has 'output' key, extract it
+    if isinstance(data, dict) and 'output' in data:
+        data = data['output']
+    
+    # If data has 'body' key (n8n HTTP request format), extract it
+    if isinstance(data, dict) and 'body' in data:
+        data = data['body']
     
     # Generate unique ID
     proposal_id = str(uuid.uuid4())
