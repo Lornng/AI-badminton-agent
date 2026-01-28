@@ -91,7 +91,7 @@ async def read_root(request: Request):
     """
     Renders the proposal with default mock data for demonstration.
     """
-    return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
+    return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal.model_dump()})
 
 @app.post("/generate")
 async def generate_proposal(request: Request, payload: Union[List[Dict[str, Any]], Dict[str, Any]]):
