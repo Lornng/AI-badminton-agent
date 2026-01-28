@@ -31,7 +31,7 @@ class ProposalData(BaseModel):
     recommendation_notes: str
 
 class N8NPayload(BaseModel):
-    output: ProposalData
+    body: ProposalData
 
 # Default Mock Data
 default_proposal = ProposalData(
@@ -90,11 +90,10 @@ async def read_root(request: Request):
     return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
 
 @app.post("/generate", response_class=HTMLResponse)
-async def generate_proposal(request: Request, payload: List[N8NPayload]):
+async def generate_proposal(request: Request, payload: N8NPayload):
     """
-    Accepts JSON data from n8n (wrapped in a list and 'output') and renders the proposal template.
-    Expects format: [{"output": {...}}]
+    Accepts JSON data from n8n (wrapped in 'body') and renders the proposal template.
+    Expects format: {"body": {...}}
     """
-    # n8n sends a list of items, we take the first one
-    data = payload[0].output
+    data = payload.body
     return templates.TemplateResponse("proposal.html", {"request": request, "data": data})
