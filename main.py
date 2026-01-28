@@ -11,38 +11,74 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Mock Data Model
-class Item(BaseModel):
+# Data Models
+class ClientDetails(BaseModel):
+    name: str
+    email: str
+
+class Product(BaseModel):
+    category: str
+    item: str
     description: str
-    cost: float
+    specifications: Dict[str, str] = {}
+    suitability: Optional[str] = None
+    features: Optional[List[str]] = None
+    characteristics: Optional[List[str]] = None
 
 class ProposalData(BaseModel):
-    client_name: str
-    project_title: str
-    date: str
-    items: Dict[str, List[Item]]
-    total: float
-    notes: Optional[str] = None
+    client_details: ClientDetails
+    products: List[Product]
+    total_package: str
+    estimated_budget_range: str
+    recommendation_notes: str
 
 # Default Mock Data
 default_proposal = ProposalData(
-    client_name="Future client",
-    project_title="Next-Gen Web Platform",
-    date=datetime.date.today().strftime("%B %d, %Y"),
-    items={
-        "Design & Discovery": [
-            Item(description="UX/UI Design System", cost=4500.00),
-            Item(description="User Research & Prototyping", cost=2000.00),
-        ],
-        "Development": [
-            Item(description="Frontend Development (React/Next.js)", cost=8500.00),
-            Item(description="Backend Integration & API Setup", cost=6000.00),
-        ],
-        "Infrastructure": [
-            Item(description="Cloud Infrastructure & Deployment", cost=2500.00),
-        ]
-    },
-    total=23500.00,
-    notes="This proposal is valid for 14 days. We look forward to working with you to build something extraordinary."
+    client_details=ClientDetails(
+        name="Jian",
+        email="jensen@aligned.au"
+    ),
+    products=[
+        Product(
+            category="Racket",
+            item="Yonex Astrox 88S Pro",
+            description="Designed for front-court doubles players, offering excellent control and quick handling with a balanced feel. Features Rotational Generator System for power generation.",
+            specifications={
+                "balance": "Slightly head-heavy (perceived even balance)"
+            },
+            suitability="Intermediate doubles play",
+            features=[
+                "Net play optimization",
+                "Quick handling for drives",
+                "Solid feel for consistent play"
+            ]
+        ),
+        Product(
+            category="String",
+            item="Yonex BG65 Titanium",
+            description="Durable all-around string with solid feel. Recommended for balanced control and durability in doubles scenarios.",
+            specifications={
+                "type": "Synthetic multifilament"
+            },
+            characteristics=[
+                "High durability",
+                "Solid impact feel",
+                "Control-oriented"
+            ]
+        ),
+        Product(
+            category="Stringing Service",
+            item="Professional Stringing",
+            description="",
+            specifications={
+                "tension": "25 lbs"
+            },
+            notes="Balanced tension for intermediate players - optimal blend of power and control"
+        )
+    ],
+    total_package="Yonex Astrox 88S Pro racket strung with Yonex BG65 Titanium at 25 lbs",
+    estimated_budget_range="$300-$400",
+    recommendation_notes="This setup prioritizes versatility for doubles play, offering control at the net and power from the backcourt. Tension and string can be adjusted based on future performance feedback."
 )
 
 @app.get("/", response_class=HTMLResponse)
