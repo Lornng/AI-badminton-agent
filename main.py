@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import datetime
+import uuid
 
 app = FastAPI()
 
@@ -32,6 +33,9 @@ class ProposalData(BaseModel):
 
 class N8NPayload(BaseModel):
     body: ProposalData
+
+# In-memory storage for proposals (use a database in production)
+proposals_db: Dict[str, ProposalData] = {}
 
 # Default Mock Data
 default_proposal = ProposalData(
@@ -89,10 +93,34 @@ async def read_root(request: Request):
     """
     return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
 
-@app.post("/generate", response_class=HTMLResponse)
+@app.post("/generate")
 async def generate_proposal(request: Request, data: ProposalData):
     """
-    Accepts JSON data from n8n and renders the proposal template.
-    Expects the ProposalData structure directly.
+    Accepts JSON data from n8n, stores it, and returns a unique URL.
     """
+    # Generate unique ID
+    proposal_id = str(uuid.uuid4())
+    
+    # Store the proposal
+    proposals_db[proposal_id] = data
+    
+    # Get the base URL from the request
+    base_url = str(request.base_url).rstrip('/')
+    proposal_url = f"{base_url}/proposal/{proposal_id}"
+    
+    return {"url": proposal_url, "proposal_id": proposal_id}
+
+@app.get("/proposal/{proposal_id}", response_class=HTMLResponse)
+async def view_proposal(request: Request, proposal_id: str):
+    """
+    View a generated proposal by its unique ID.
+    """
+    if proposal_id not in proposals_db:
+        return templates.TemplateResponse("proposal.html", {
+            "request": request,
+            "data": default_proposal,
+            "error": "Proposal not found"
+        })
+    
+    data = proposals_db[proposal_id]
     return templates.TemplateResponse("proposal.html", {"request": request, "data": data})
