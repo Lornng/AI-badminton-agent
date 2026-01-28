@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import datetime
 
 app = FastAPI()
@@ -20,10 +20,8 @@ class Product(BaseModel):
     category: str
     item: str
     description: str
-    specifications: Dict[str, str] = {}
-    suitability: Optional[str] = None
-    features: Optional[List[str]] = None
-    characteristics: Optional[List[str]] = None
+    # Specifications now holds everything including suitability, features, etc.
+    specifications: Dict[str, Any] = {} 
 
 class ProposalData(BaseModel):
     client_details: ClientDetails
@@ -31,6 +29,9 @@ class ProposalData(BaseModel):
     total_package: str
     estimated_budget_range: str
     recommendation_notes: str
+
+class N8NPayload(BaseModel):
+    output: ProposalData
 
 # Default Mock Data
 default_proposal = ProposalData(
@@ -44,36 +45,36 @@ default_proposal = ProposalData(
             item="Yonex Astrox 88S Pro",
             description="Designed for front-court doubles players, offering excellent control and quick handling with a balanced feel. Features Rotational Generator System for power generation.",
             specifications={
-                "balance": "Slightly head-heavy (perceived even balance)"
-            },
-            suitability="Intermediate doubles play",
-            features=[
-                "Net play optimization",
-                "Quick handling for drives",
-                "Solid feel for consistent play"
-            ]
+                "balance": "Slightly head-heavy (perceived even balance)",
+                "suitability": "Intermediate doubles play",
+                "features": [
+                    "Net play optimization",
+                    "Quick handling for drives",
+                    "Solid feel for consistent play"
+                ]
+            }
         ),
         Product(
             category="String",
             item="Yonex BG65 Titanium",
             description="Durable all-around string with solid feel. Recommended for balanced control and durability in doubles scenarios.",
             specifications={
-                "type": "Synthetic multifilament"
-            },
-            characteristics=[
-                "High durability",
-                "Solid impact feel",
-                "Control-oriented"
-            ]
+                "type": "Synthetic multifilament",
+                "characteristics": [
+                    "High durability",
+                    "Solid impact feel",
+                    "Control-oriented"
+                ]
+            }
         ),
         Product(
             category="Stringing Service",
             item="Professional Stringing",
             description="",
             specifications={
-                "tension": "25 lbs"
-            },
-            notes="Balanced tension for intermediate players - optimal blend of power and control"
+                "tension": "25 lbs",
+                "notes": "Balanced tension for intermediate players - optimal blend of power and control"
+            }
         )
     ],
     total_package="Yonex Astrox 88S Pro racket strung with Yonex BG65 Titanium at 25 lbs",
@@ -89,9 +90,8 @@ async def read_root(request: Request):
     return templates.TemplateResponse("proposal.html", {"request": request, "data": default_proposal})
 
 @app.post("/generate", response_class=HTMLResponse)
-async def generate_proposal(request: Request, data: ProposalData):
+async def generate_proposal(request: Request, payload: N8NPayload):
     """
-    Accepts JSON data and renders the proposal template with it.
-    Useful for n8n to call via POST.
+    Accepts JSON data from n8n (wrapped in 'output') and renders the proposal template.
     """
-    return templates.TemplateResponse("proposal.html", {"request": request, "data": data})
+    return templates.TemplateResponse("proposal.html", {"request": request, "data": payload.output})

@@ -78,70 +78,63 @@
                                 product.category }}</span>
                             <h3 class="text-xl font-semibold text-white">{{ product.item }}</h3>
                         </div>
-                        {% if product.suitability %}
+                        {% if product.specifications.get('suitability') %}
                         <div
                             class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 text-xs font-medium border border-blue-500/20">
-                            {{ product.suitability }}
+                            {{ product.specifications.get('suitability') }}
                         </div>
                         {% endif %}
                     </div>
 
                     <!-- Product Body -->
                     <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Left Col: Description -->
+                        <!-- Left Col: Description & Specs -->
                         <div>
                             <h4 class="text-slate-300 font-medium mb-2 text-sm uppercase">Description</h4>
                             <p class="text-slate-400 text-sm leading-relaxed mb-4">{{ product.description }}</p>
 
-                            {% if product.specifications %}
+                            {% set specs = product.specifications %}
+                            {% if specs %}
                             <div class="mt-4">
                                 <h4 class="text-slate-300 font-medium mb-2 text-sm uppercase">Specifications</h4>
                                 <ul class="space-y-1">
-                                    {% for key, value in product.specifications.items() %}
+                                    {% for key, value in specs.items() %}
+                                    {# Skip special keys we render elsewhere or don't want in simple lists #}
+                                    {% if key not in ['suitability', 'features', 'characteristics'] and value is string
+                                    %}
                                     <li
                                         class="flex justify-between text-sm border-b border-slate-700/30 pb-1 last:border-0">
-                                        <span class="text-slate-500 capitalize">{{ key }}</span>
+                                        <span class="text-slate-500 capitalize">{{ key.replace('_', ' ') }}</span>
                                         <span class="text-slate-300">{{ value }}</span>
                                     </li>
+                                    {% endif %}
                                     {% endfor %}
                                 </ul>
                             </div>
                             {% endif %}
                         </div>
 
-                        <!-- Right Col: Features/Characteristics -->
+                        <!-- Right Col: Features/Characteristics Lists -->
                         <div>
-                            {% if product.features %}
-                            <h4 class="text-slate-300 font-medium mb-3 text-sm uppercase">Key Features</h4>
+                            {% for key, value in product.specifications.items() %}
+                            {% if value is not string and value is iterable %}
+                            {# This catches lists like features, characteristics #}
+                            <h4 class="text-slate-300 font-medium mb-3 text-sm uppercase mt-4 first:mt-0">{{
+                                key.replace('_', ' ') }}</h4>
                             <ul class="space-y-2">
-                                {% for feature in product.features %}
+                                {% for item in value %}
                                 <li class="flex items-start text-sm text-slate-400">
                                     <svg class="w-4 h-4 text-blue-400 mr-2 mt-0.5" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 13l4 4L19 7"></path>
                                     </svg>
-                                    {{ feature }}
+                                    {{ item }}
                                 </li>
                                 {% endfor %}
                             </ul>
                             {% endif %}
-
-                            {% if product.characteristics %}
-                            <h4 class="text-slate-300 font-medium mb-3 text-sm uppercase">Characteristics</h4>
-                            <ul class="space-y-2">
-                                {% for char in product.characteristics %}
-                                <li class="flex items-start text-sm text-slate-400">
-                                    <svg class="w-4 h-4 text-purple-400 mr-2 mt-0.5" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    {{ char }}
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
